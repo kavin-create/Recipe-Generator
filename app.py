@@ -135,6 +135,7 @@ if st.session_state.uploaded_image is not None:
             # Analyze image for ingredients
             with st.spinner("🤖 Using AI to identify ingredients..."):
               
+                st.subheader("🔍 Analyzing Image...")
                 st.write("[LOG] Starting ingredient analysis with Gemini")
                 # Convert image to bytes
                 img_byte_arr = io.BytesIO()
@@ -161,7 +162,7 @@ if st.session_state.uploaded_image is not None:
 
                 client = genai.Client(api_key=API_KEY)
 
-                MODEL_ID = "gemini-3.5-flash"
+                MODEL_ID = "gemini-3.1-flash-lite"
 
 
                 interaction = client.interactions.create(
@@ -183,111 +184,113 @@ if st.session_state.uploaded_image is not None:
                     print(f"  Step {j}: type={step.type}")
 
 
-                st.write(interaction.output_text)
+                st.write(interaction.output_text)        
 
                     
-                if "No food ingredients detected" in ingredients_text:
+                if "No food ingredients detected" in interaction.output_text:
                     st.warning("⚠️ No food ingredients detected in the image. Please upload an image with food items.")
                     st.session_state.ingredients = []
                 else:
+                    st.success("✅ Ingredients identified!")
+                    ingredients_text = st.text_area("Raw Gemini Response", value=interaction.output_text, height=150)
                     st.session_state.ingredients = [ing.strip() for ing in ingredients_text.split('\n') if ing.strip()]
                     print(f"[LOG] Ingredients detected: {st.session_state.ingredients}")
-                    st.success("✅ Ingredients identified!")
+
                 
                 
         
-        # Display identified ingredients
-        if st.session_state.ingredients:
-            st.write("### 🥘 Identified Ingredients:")
+#         # Display identified ingredients
+#         if st.session_state.ingredients:
+#             st.write("### 🥘 Identified Ingredients:")
             
-            # Display ingredients as badges
-            ingredient_html = ""
-            for ingredient in st.session_state.ingredients:
-                ingredient_html += f'<span class="ingredient-badge">{ingredient}</span>'
+#             # Display ingredients as badges
+#             ingredient_html = ""
+#             for ingredient in st.session_state.ingredients:
+#                 ingredient_html += f'<span class="ingredient-badge">{ingredient}</span>'
             
-            st.markdown(ingredient_html, unsafe_allow_html=True)
+#             st.markdown(ingredient_html, unsafe_allow_html=True)
             
-            # Suggest recipes button
-            if st.button("👨‍🍳 Suggest Recipes", use_container_width=True, type="primary"):
-                st.session_state.recipes = None  # Reset recipes to fetch new ones
+#             # Suggest recipes button
+#             if st.button("👨‍🍳 Suggest Recipes", use_container_width=True, type="primary"):
+#                 st.session_state.recipes = None  # Reset recipes to fetch new ones
     
-    # Recipe suggestions
-    if st.session_state.ingredients and len(st.session_state.ingredients) > 0:
-        st.divider()
+#     # Recipe suggestions
+#     if st.session_state.ingredients and len(st.session_state.ingredients) > 0:
+#         st.divider()
         
-        if st.session_state.recipes is None:
-            with st.spinner("👨‍🍳 Generating recipe suggestions..."):
-                try:
-                    print("[LOG] Starting recipe generation with Gemini")
-#                     model = genai.GenerativeModel('gemini-3.0-flash')
+#         if st.session_state.recipes is None:
+#             with st.spinner("👨‍🍳 Generating recipe suggestions..."):
+#                 try:
+#                     print("[LOG] Starting recipe generation with Gemini")
+# #                     model = genai.GenerativeModel('gemini-3.0-flash')
                     
-#                     ingredients_list = ", ".join(st.session_state.ingredients)
+# #                     ingredients_list = ", ".join(st.session_state.ingredients)
                     
-#                     print("[LOG] Sending ingredient list to Gemini for recipe suggestions")
-#                     response = model.generate_content(f"""Based on these ingredients: {ingredients_list}
+# #                     print("[LOG] Sending ingredient list to Gemini for recipe suggestions")
+# #                     response = model.generate_content(f"""Based on these ingredients: {ingredients_list}
 
-# Suggest exactly 2 delicious recipes. For each recipe, provide:
+# # Suggest exactly 2 delicious recipes. For each recipe, provide:
 
-# 1. Recipe Name
-# 2. Cuisine Type
-# 3. Difficulty Level (Easy/Medium/Hard)
-# 4. Prep Time (in minutes)
-# 5. Cook Time (in minutes)
-# 6. Step-by-step instructions (numbered list, be detailed)
-# 7. Optional ingredients that could enhance the dish
+# # 1. Recipe Name
+# # 2. Cuisine Type
+# # 3. Difficulty Level (Easy/Medium/Hard)
+# # 4. Prep Time (in minutes)
+# # 5. Cook Time (in minutes)
+# # 6. Step-by-step instructions (numbered list, be detailed)
+# # 7. Optional ingredients that could enhance the dish
 
-# Format the response clearly with these exact sections for each recipe separated by "---".
-# Make the recipes practical and achievable with the given ingredients.""")
+# # Format the response clearly with these exact sections for each recipe separated by "---".
+# # Make the recipes practical and achievable with the given ingredients.""")
                     
-                    # st.session_state.recipes = response.text
-                    print(f"[LOG] Recipe suggestions generated: {st.session_state.recipes[:150]}...")
+#                     # st.session_state.recipes = response.text
+#                     print(f"[LOG] Recipe suggestions generated: {st.session_state.recipes[:150]}...")
                     
-                except Exception as e:
-                    st.error(f"❌ Error generating recipes: {str(e)}")
-                    st.session_state.recipes = None
+#                 except Exception as e:
+#                     st.error(f"❌ Error generating recipes: {str(e)}")
+#                     st.session_state.recipes = None
         
-        # Display recipes
-        if st.session_state.recipes:
-            st.subheader("👨‍🍳 Recipe Suggestions")
+#         # Display recipes
+#         if st.session_state.recipes:
+#             st.subheader("👨‍🍳 Recipe Suggestions")
             
-            # Split recipes by separator
-            recipes_list = st.session_state.recipes.split("---")
+#             # Split recipes by separator
+#             recipes_list = st.session_state.recipes.split("---")
             
-            # Create tabs for each recipe
-            if len(recipes_list) >= 2:
-                tab1, tab2 = st.tabs([f"Recipe {i+1}" for i in range(min(2, len(recipes_list)))])
+#             # Create tabs for each recipe
+#             if len(recipes_list) >= 2:
+#                 tab1, tab2 = st.tabs([f"Recipe {i+1}" for i in range(min(2, len(recipes_list)))])
                 
-                tabs = [tab1, tab2]
-                for idx, (tab, recipe) in enumerate(zip(tabs, recipes_list[:2])):
-                    with tab:
-                        st.markdown(f"""
-<div class="recipe-card">
-{recipe}
-</div>
-""", unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-<div class="recipe-card">
-{st.session_state.recipes}
-</div>
-""", unsafe_allow_html=True)
+#                 tabs = [tab1, tab2]
+#                 for idx, (tab, recipe) in enumerate(zip(tabs, recipes_list[:2])):
+#                     with tab:
+#                         st.markdown(f"""
+# <div class="recipe-card">
+# {recipe}
+# </div>
+# """, unsafe_allow_html=True)
+#             else:
+#                 st.markdown(f"""
+# <div class="recipe-card">
+# {st.session_state.recipes}
+# </div>
+# """, unsafe_allow_html=True)
             
-            # Download recipes button
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("📥 Download Recipes as Text", use_container_width=True):
-                    st.download_button(
-                        label="Click to Download",
-                        data=st.session_state.recipes,
-                        file_name="recipes.txt",
-                        mime="text/plain",
-                        use_container_width=True
-                    )
+#             # Download recipes button
+#             col1, col2 = st.columns(2)
+#             with col1:
+#                 if st.button("📥 Download Recipes as Text", use_container_width=True):
+#                     st.download_button(
+#                         label="Click to Download",
+#                         data=st.session_state.recipes,
+#                         file_name="recipes.txt",
+#                         mime="text/plain",
+#                         use_container_width=True
+#                     )
             
-            with col2:
-                if st.button("🔄 Get Different Recipes", use_container_width=True):
-                    st.session_state.recipes = None
-                    st.rerun()
+#             with col2:
+#                 if st.button("🔄 Get Different Recipes", use_container_width=True):
+#                     st.session_state.recipes = None
+#                     st.rerun()
 
 else:
     # Initial state - show instructions

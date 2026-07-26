@@ -10,7 +10,8 @@ import re
 
 
 load_dotenv()
-API_KEY = os.getenv("GEMINI_API_KEY")
+# API_KEY = os.getenv("GEMINI_API_KEY")
+API_KEY = st.secrets["API_KEY"]
 
 recipe_prompt = """
 Based on these ingredients:

@@ -7,17 +7,33 @@ from dotenv import load_dotenv
 from PIL import Image
 import io
 import base64
+import re
+
 
 # Load environment variables
 load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Configure Gemini API
-# if API_KEY:
-#     genai.configure(api_key=API_KEY)
-# else:
-#     st.error("❌ GEMINI_API_KEY not found in .env file")
-#     st.stop()
+recipe_prompt = """
+Based on these ingredients:
+
+ignore non food items
+
+do not add any other text
+
+Suggest exactly 4 different delicious recipes. For each recipe, provide:
+
+1. Recipe Name
+2. Cuisine Type
+3. Difficulty Level (Easy/Medium/Hard)
+4. Prep Time (in minutes)
+5. Cook Time (in minutes)
+6. Step-by-step instructions (numbered list, be detailed)
+7. Optional ingredients that could enhance the dish
+
+Separate each recipe with "---RECIPE_BREAK---"
+
+Make the recipes practical and achievable with the given ingredients."""
 
 # Page configuration
 st.set_page_config(
@@ -129,12 +145,9 @@ if st.session_state.uploaded_image is not None:
             st.rerun()
     
     with col2:
-        st.subheader("🔍 Analyzing Image...")
-        
         if st.session_state.ingredients is None:
             # Analyze image for ingredients
             with st.spinner("🤖 Using AI to identify ingredients..."):
-              
                 st.subheader("🔍 Analyzing Image...")
                 st.write("[LOG] Starting ingredient analysis with Gemini")
                 # Convert image to bytes
@@ -182,20 +195,45 @@ if st.session_state.uploaded_image is not None:
                 print(f"Number of steps: {len(interaction.steps)}")
                 for j, step in enumerate(interaction.steps):
                     print(f"  Step {j}: type={step.type}")
-
-
+                st.session_state.ingredients = interaction.output_text.strip().split(",") if interaction.output_text.strip() else []
                 st.write(interaction.output_text)        
 
                     
-                if "No food ingredients detected" in interaction.output_text:
-                    st.warning("⚠️ No food ingredients detected in the image. Please upload an image with food items.")
-                    st.session_state.ingredients = []
-                else:
-                    st.success("✅ Ingredients identified!")
-                    ingredients_text = st.text_area("Raw Gemini Response", value=interaction.output_text, height=150)
-                    st.session_state.ingredients = [ing.strip() for ing in ingredients_text.split('\n') if ing.strip()]
-                    print(f"[LOG] Ingredients detected: {st.session_state.ingredients}")
+        if "No food ingredients detected" in st.session_state.ingredients:
+            st.warning("⚠️ No food ingredients detected in the image. Please upload an image with food items.")
+            st.session_state.ingredients = []
+        else:
+            st.success("✅ Ingredients identified!")
+            ingredients_text = st.text_area("Raw Gemini Response", value= " ".join(st.session_state.ingredients), height=150)
+            st.session_state.ingredients = [ing.strip() for ing in ingredients_text.split('\n') if ing.strip()]
+            print(f"[LOG] Ingredients detected: {st.session_state.ingredients}")
+            if st.button("Done"):
+                with st.spinner("curating recipes"):
+                    st.write("the ingredients are: ", st.session_state.ingredients[0])
+                    client = genai.Client(api_key=API_KEY)
+                    MODEL_ID = "gemini-3.1-flash-lite"
+                    interaction = client.interactions.create(
+                    model=MODEL_ID,
+                    input=[
+                            {
+                                "type": "text", 
+                                "text": st.session_state.ingredients[0]+recipe_prompt
+                    
+                            }
+                        ]
+                )
+                    st.session_state.recipes = interaction.output_text.strip().split("---RECIPE_BREAK---") if interaction.output_text.strip() else []
+                    st.session_state.recipes = [r.strip() for r in st.session_state.recipes if r.strip()]
+                    
+                    st.write(interaction.output_text)
 
+                    tabs = st.tabs([f"Recipe {i+1}" for i in range(len(st.session_state.recipes))])
+
+                    for idx, tab in enumerate(tabs):
+                        with tab:
+                            st.markdown(st.session_state.recipes[idx])
+
+                    
                 
                 
         
